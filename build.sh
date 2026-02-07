@@ -1,5 +1,5 @@
 #!/bin/bash
-# OTA upload script for revel-monitor
+# build script for revel-monitor
 #
 set -e
 
@@ -27,9 +27,10 @@ MQTT_USERNAME=$(parse_secret MQTT_USERNAME)
 MQTT_PASSWORD=$(parse_secret MQTT_PASSWORD)
 OTA_PASSWORD=$(parse_secret OTA_PASSWORD)
 
-echo "Uploading to $DEVICE..."
+echo "Building $DEVICE..."
 cd "$SCRIPT_DIR"
 
+# just build
 esphome \
     -s wifi_primary_ssid "$WIFI_PRIMARY_SSID" \
     -s wifi_primary_password "$WIFI_PRIMARY_PASSWORD" \
@@ -39,4 +40,4 @@ esphome \
     -s mqtt_username "$MQTT_USERNAME" \
     -s mqtt_password "$MQTT_PASSWORD" \
     -s ota_password "$OTA_PASSWORD" \
-    run "$CONFIG" --no-logs --device "$DEVICE"
+    compile "$CONFIG"
