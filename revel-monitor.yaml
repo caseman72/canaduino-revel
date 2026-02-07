@@ -147,6 +147,28 @@ sensor:
     update_interval: 60s
     icon: "mdi:wifi"
 
+  # Voltage sensor on Canaduino A1 (A0 analog input, 0-10V range)
+  # A0 on Nano ESP32 -> GPIO 1
+  # DC 0-25V sensor module with Canaduino built-in divider
+  - platform: adc
+    pin: 1
+    name: "Revel Voltage"
+    id: revel_voltage
+    attenuation: auto
+    update_interval: 30s
+    unit_of_measurement: "V"
+    accuracy_decimals: 1
+    icon: "mdi:flash"
+    filters:
+      - calibrate_linear:
+          - 0.072 -> 0.0
+          - 0.420 -> 5.03
+          - 0.892 -> 9.98
+          - 1.123 -> 12.26
+      - sliding_window_moving_average:
+          window_size: 10
+          send_every: 2
+
   - platform: dallas_temp
     name: "Revel Temperature"
     id: revel_temp
