@@ -17,3 +17,8 @@
 
 // OTA password
 #define OTA_PASSWORD "your_ota_password"
+
+// Lithionics Battery BLE MAC addresses
+#define BLE_MAC_BATTERY_1 "AA:BB:CC:DD:EE:01"
+#define BLE_MAC_BATTERY_2 "AA:BB:CC:DD:EE:02"
+#define BLE_MAC_BATTERY_3 "AA:BB:CC:DD:EE:03"

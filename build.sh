@@ -26,12 +26,16 @@ MQTT_BROKER=$(parse_secret MQTT_BROKER)
 MQTT_USERNAME=$(parse_secret MQTT_USERNAME)
 MQTT_PASSWORD=$(parse_secret MQTT_PASSWORD)
 OTA_PASSWORD=$(parse_secret OTA_PASSWORD)
+BLE_MAC_BATTERY_1=$(parse_secret BLE_MAC_BATTERY_1)
+BLE_MAC_BATTERY_2=$(parse_secret BLE_MAC_BATTERY_2)
+BLE_MAC_BATTERY_3=$(parse_secret BLE_MAC_BATTERY_3)
 
 echo "Building $DEVICE..."
 cd "$SCRIPT_DIR"
 
 # just build
 esphome \
+    -l ERROR \
     -s wifi_primary_ssid "$WIFI_PRIMARY_SSID" \
     -s wifi_primary_password "$WIFI_PRIMARY_PASSWORD" \
     -s wifi_secondary_ssid "$WIFI_SECONDARY_SSID" \
@@ -40,4 +44,7 @@ esphome \
     -s mqtt_username "$MQTT_USERNAME" \
     -s mqtt_password "$MQTT_PASSWORD" \
     -s ota_password "$OTA_PASSWORD" \
+    -s ble_mac_battery_1 "$BLE_MAC_BATTERY_1" \
+    -s ble_mac_battery_2 "$BLE_MAC_BATTERY_2" \
+    -s ble_mac_battery_3 "$BLE_MAC_BATTERY_3" \
     compile "$CONFIG"

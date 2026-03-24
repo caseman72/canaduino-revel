@@ -10,5 +10,14 @@ secrets.h
 # Claude Code
 **/.claude/
 
+# BLE discovery artifacts
+ble_discovery/*.log
+ble_discovery/*.json
+ble_discovery/.venv/
+
+# Data files (logs, photos)
+*.log
+*.zip
+
 # macOS
 .DS_Store

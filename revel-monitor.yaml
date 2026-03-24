@@ -8,10 +8,15 @@ substitutions:
   mqtt_username: "PLACEHOLDER"
   mqtt_password: "PLACEHOLDER"
   ota_password: "PLACEHOLDER"
+  ble_mac_battery_1: "PLACEHOLDER"
+  ble_mac_battery_2: "PLACEHOLDER"
+  ble_mac_battery_3: "PLACEHOLDER"
 
 esphome:
   name: revel-monitor
   friendly_name: Revel Monitor
+  includes:
+    - lithionics_ble.h
   on_boot:
     priority: 599
     then:
@@ -33,6 +38,7 @@ esp32:
     type: esp-idf
     sdkconfig_options:
       CONFIG_LOG_COLORS: "n"
+      CONFIG_BT_NIMBLE_MAX_CONNECTIONS: "4"
 
 wifi:
   ssid: ${wifi_primary_ssid}
@@ -96,12 +102,41 @@ ota:
 logger:
   level: INFO
 
+# BLE for Lithionics battery monitoring
+# Service: 0000ffe0 (HM-10 UART), Characteristic: 0000ffe1 (notify)
+# MAC addresses derived from BLE scan — update if connections fail
+esp32_ble_tracker:
+  scan_parameters:
+    active: false
+    interval: 320ms
+    window: 100ms
+
+ble_client:
+  - mac_address: ${ble_mac_battery_1}
+    id: battery_1
+  - mac_address: ${ble_mac_battery_2}
+    id: battery_2
+  - mac_address: ${ble_mac_battery_3}
+    id: battery_3
+
 # State tracking
 globals:
   - id: use_secondary_network
     type: bool
     restore_value: yes
     initial_value: 'false'
+  - id: batt1_buf
+    type: std::string
+    restore_value: no
+    initial_value: '""'
+  - id: batt2_buf
+    type: std::string
+    restore_value: no
+    initial_value: '""'
+  - id: batt3_buf
+    type: std::string
+    restore_value: no
+    initial_value: '""'
 
 # 1-Wire bus for DS18B20 temperature sensor
 # Wiring: SDA/A4 terminal (data), 5V (VCC), GND
@@ -178,6 +213,335 @@ sensor:
     filters:
       - lambda: return x * 9.0 / 5.0 + 32.0;
     unit_of_measurement: "°F"
+
+  # --- Lithionics Battery BLE Sensors ---
+  # BLE notification receivers (internal — feed parsed data to template sensors)
+  - platform: ble_client
+    ble_client_id: battery_1
+    type: characteristic
+    service_uuid: '0000ffe0-0000-1000-8000-00805f9b34fb'
+    characteristic_uuid: '0000ffe1-0000-1000-8000-00805f9b34fb'
+    notify: true
+    update_interval: never
+    internal: true
+    id: batt1_ble_raw
+    lambda: |-
+      std::string &buf = id(batt1_buf);
+      buf.append(x.begin(), x.end());
+      LithionicsSensors s = {id(batt1_voltage), id(batt1_cell1), id(batt1_cell2),
+        id(batt1_cell3), id(batt1_cell4), id(batt1_bms_temp),
+        id(batt1_batt_temp), id(batt1_current), id(batt1_soc), id(batt1_capacity)};
+      lithionics_parse(buf, s);
+      return 0;
+
+  - platform: ble_client
+    ble_client_id: battery_2
+    type: characteristic
+    service_uuid: '0000ffe0-0000-1000-8000-00805f9b34fb'
+    characteristic_uuid: '0000ffe1-0000-1000-8000-00805f9b34fb'
+    notify: true
+    update_interval: never
+    internal: true
+    id: batt2_ble_raw
+    lambda: |-
+      std::string &buf = id(batt2_buf);
+      buf.append(x.begin(), x.end());
+      LithionicsSensors s = {id(batt2_voltage), id(batt2_cell1), id(batt2_cell2),
+        id(batt2_cell3), id(batt2_cell4), id(batt2_bms_temp),
+        id(batt2_batt_temp), id(batt2_current), id(batt2_soc), id(batt2_capacity)};
+      lithionics_parse(buf, s);
+      return 0;
+
+  - platform: ble_client
+    ble_client_id: battery_3
+    type: characteristic
+    service_uuid: '0000ffe0-0000-1000-8000-00805f9b34fb'
+    characteristic_uuid: '0000ffe1-0000-1000-8000-00805f9b34fb'
+    notify: true
+    update_interval: never
+    internal: true
+    id: batt3_ble_raw
+    lambda: |-
+      std::string &buf = id(batt3_buf);
+      buf.append(x.begin(), x.end());
+      LithionicsSensors s = {id(batt3_voltage), id(batt3_cell1), id(batt3_cell2),
+        id(batt3_cell3), id(batt3_cell4), id(batt3_bms_temp),
+        id(batt3_batt_temp), id(batt3_current), id(batt3_soc), id(batt3_capacity)};
+      lithionics_parse(buf, s);
+      return 0;
+
+  # Battery 1 (Li3-010622052)
+  - platform: template
+    name: "Battery 1 Voltage"
+    id: batt1_voltage
+    unit_of_measurement: "V"
+    accuracy_decimals: 2
+    device_class: voltage
+    icon: "mdi:battery"
+    filters:
+      - throttle: 10s
+  - platform: template
+    name: "Battery 1 Cell 1"
+    id: batt1_cell1
+    unit_of_measurement: "V"
+    accuracy_decimals: 2
+    device_class: voltage
+    icon: "mdi:battery-outline"
+    filters:
+      - throttle: 10s
+  - platform: template
+    name: "Battery 1 Cell 2"
+    id: batt1_cell2
+    unit_of_measurement: "V"
+    accuracy_decimals: 2
+    device_class: voltage
+    icon: "mdi:battery-outline"
+    filters:
+      - throttle: 10s
+  - platform: template
+    name: "Battery 1 Cell 3"
+    id: batt1_cell3
+    unit_of_measurement: "V"
+    accuracy_decimals: 2
+    device_class: voltage
+    icon: "mdi:battery-outline"
+    filters:
+      - throttle: 10s
+  - platform: template
+    name: "Battery 1 Cell 4"
+    id: batt1_cell4
+    unit_of_measurement: "V"
+    accuracy_decimals: 2
+    device_class: voltage
+    icon: "mdi:battery-outline"
+    filters:
+      - throttle: 10s
+  - platform: template
+    name: "Battery 1 BMS Temp"
+    id: batt1_bms_temp
+    unit_of_measurement: "°F"
+    accuracy_decimals: 0
+    device_class: temperature
+    icon: "mdi:thermometer"
+    filters:
+      - throttle: 30s
+  - platform: template
+    name: "Battery 1 Temperature"
+    id: batt1_batt_temp
+    unit_of_measurement: "°F"
+    accuracy_decimals: 0
+    device_class: temperature
+    icon: "mdi:thermometer"
+    filters:
+      - throttle: 30s
+  - platform: template
+    name: "Battery 1 Current"
+    id: batt1_current
+    unit_of_measurement: "A"
+    accuracy_decimals: 0
+    device_class: current
+    icon: "mdi:current-dc"
+    filters:
+      - throttle: 10s
+  - platform: template
+    name: "Battery 1 SOC"
+    id: batt1_soc
+    unit_of_measurement: "%"
+    accuracy_decimals: 0
+    device_class: battery
+    icon: "mdi:battery-charging"
+    filters:
+      - throttle: 10s
+  - platform: template
+    name: "Battery 1 Capacity"
+    id: batt1_capacity
+    unit_of_measurement: "Ah"
+    accuracy_decimals: 0
+    icon: "mdi:battery-heart-variant"
+    filters:
+      - throttle: 30s
+
+  # Battery 2 (Li3-010622146)
+  - platform: template
+    name: "Battery 2 Voltage"
+    id: batt2_voltage
+    unit_of_measurement: "V"
+    accuracy_decimals: 2
+    device_class: voltage
+    icon: "mdi:battery"
+    filters:
+      - throttle: 10s
+  - platform: template
+    name: "Battery 2 Cell 1"
+    id: batt2_cell1
+    unit_of_measurement: "V"
+    accuracy_decimals: 2
+    device_class: voltage
+    icon: "mdi:battery-outline"
+    filters:
+      - throttle: 10s
+  - platform: template
+    name: "Battery 2 Cell 2"
+    id: batt2_cell2
+    unit_of_measurement: "V"
+    accuracy_decimals: 2
+    device_class: voltage
+    icon: "mdi:battery-outline"
+    filters:
+      - throttle: 10s
+  - platform: template
+    name: "Battery 2 Cell 3"
+    id: batt2_cell3
+    unit_of_measurement: "V"
+    accuracy_decimals: 2
+    device_class: voltage
+    icon: "mdi:battery-outline"
+    filters:
+      - throttle: 10s
+  - platform: template
+    name: "Battery 2 Cell 4"
+    id: batt2_cell4
+    unit_of_measurement: "V"
+    accuracy_decimals: 2
+    device_class: voltage
+    icon: "mdi:battery-outline"
+    filters:
+      - throttle: 10s
+  - platform: template
+    name: "Battery 2 BMS Temp"
+    id: batt2_bms_temp
+    unit_of_measurement: "°F"
+    accuracy_decimals: 0
+    device_class: temperature
+    icon: "mdi:thermometer"
+    filters:
+      - throttle: 30s
+  - platform: template
+    name: "Battery 2 Temperature"
+    id: batt2_batt_temp
+    unit_of_measurement: "°F"
+    accuracy_decimals: 0
+    device_class: temperature
+    icon: "mdi:thermometer"
+    filters:
+      - throttle: 30s
+  - platform: template
+    name: "Battery 2 Current"
+    id: batt2_current
+    unit_of_measurement: "A"
+    accuracy_decimals: 0
+    device_class: current
+    icon: "mdi:current-dc"
+    filters:
+      - throttle: 10s
+  - platform: template
+    name: "Battery 2 SOC"
+    id: batt2_soc
+    unit_of_measurement: "%"
+    accuracy_decimals: 0
+    device_class: battery
+    icon: "mdi:battery-charging"
+    filters:
+      - throttle: 10s
+  - platform: template
+    name: "Battery 2 Capacity"
+    id: batt2_capacity
+    unit_of_measurement: "Ah"
+    accuracy_decimals: 0
+    icon: "mdi:battery-heart-variant"
+    filters:
+      - throttle: 30s
+
+  # Battery 3 (Li3-032124086)
+  - platform: template
+    name: "Battery 3 Voltage"
+    id: batt3_voltage
+    unit_of_measurement: "V"
+    accuracy_decimals: 2
+    device_class: voltage
+    icon: "mdi:battery"
+    filters:
+      - throttle: 10s
+  - platform: template
+    name: "Battery 3 Cell 1"
+    id: batt3_cell1
+    unit_of_measurement: "V"
+    accuracy_decimals: 2
+    device_class: voltage
+    icon: "mdi:battery-outline"
+    filters:
+      - throttle: 10s
+  - platform: template
+    name: "Battery 3 Cell 2"
+    id: batt3_cell2
+    unit_of_measurement: "V"
+    accuracy_decimals: 2
+    device_class: voltage
+    icon: "mdi:battery-outline"
+    filters:
+      - throttle: 10s
+  - platform: template
+    name: "Battery 3 Cell 3"
+    id: batt3_cell3
+    unit_of_measurement: "V"
+    accuracy_decimals: 2
+    device_class: voltage
+    icon: "mdi:battery-outline"
+    filters:
+      - throttle: 10s
+  - platform: template
+    name: "Battery 3 Cell 4"
+    id: batt3_cell4
+    unit_of_measurement: "V"
+    accuracy_decimals: 2
+    device_class: voltage
+    icon: "mdi:battery-outline"
+    filters:
+      - throttle: 10s
+  - platform: template
+    name: "Battery 3 BMS Temp"
+    id: batt3_bms_temp
+    unit_of_measurement: "°F"
+    accuracy_decimals: 0
+    device_class: temperature
+    icon: "mdi:thermometer"
+    filters:
+      - throttle: 30s
+  - platform: template
+    name: "Battery 3 Temperature"
+    id: batt3_batt_temp
+    unit_of_measurement: "°F"
+    accuracy_decimals: 0
+    device_class: temperature
+    icon: "mdi:thermometer"
+    filters:
+      - throttle: 30s
+  - platform: template
+    name: "Battery 3 Current"
+    id: batt3_current
+    unit_of_measurement: "A"
+    accuracy_decimals: 0
+    device_class: current
+    icon: "mdi:current-dc"
+    filters:
+      - throttle: 10s
+  - platform: template
+    name: "Battery 3 SOC"
+    id: batt3_soc
+    unit_of_measurement: "%"
+    accuracy_decimals: 0
+    device_class: battery
+    icon: "mdi:battery-charging"
+    filters:
+      - throttle: 10s
+  - platform: template
+    name: "Battery 3 Capacity"
+    id: batt3_capacity
+    unit_of_measurement: "Ah"
+    accuracy_decimals: 0
+    icon: "mdi:battery-heart-variant"
+    filters:
+      - throttle: 30s
 
 text_sensor:
   - platform: wifi_info
