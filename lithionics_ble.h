@@ -1,5 +1,6 @@
 #pragma once
 #include "esphome/components/sensor/sensor.h"
+#include "esphome/components/text_sensor/text_sensor.h"
 #include <string>
 #include <cstring>
 #include <cstdlib>
@@ -15,6 +16,8 @@ struct LithionicsSensors {
   esphome::sensor::Sensor *current;
   esphome::sensor::Sensor *soc;
   esphome::sensor::Sensor *capacity;
+  esphome::sensor::Sensor *power;
+  esphome::text_sensor::TextSensor *status_code;
 };
 
 // Parse buffered BLE data from Lithionics battery into sensor values.
@@ -72,6 +75,8 @@ inline void lithionics_parse(std::string &buf, const LithionicsSensors &s) {
         if (s.batt_temp) s.batt_temp->publish_state(f[6]);
         if (s.current) s.current->publish_state(f[7]);
         if (s.soc) s.soc->publish_state(f[8]);
+        if (s.power) s.power->publish_state(f[0] / 100.0f * f[7]);
+        if (n >= 10 && s.status_code) s.status_code->publish_state(line.substr(line.rfind(',') + 1));
       }
     }
   }

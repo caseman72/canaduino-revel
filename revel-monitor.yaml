@@ -230,7 +230,8 @@ sensor:
       buf.append(x.begin(), x.end());
       LithionicsSensors s = {id(batt1_voltage), id(batt1_cell1), id(batt1_cell2),
         id(batt1_cell3), id(batt1_cell4), id(batt1_bms_temp),
-        id(batt1_batt_temp), id(batt1_current), id(batt1_soc), id(batt1_capacity)};
+        id(batt1_batt_temp), id(batt1_current), id(batt1_soc), id(batt1_capacity),
+        id(batt1_power), id(batt1_status_code)};
       lithionics_parse(buf, s);
       return 0;
 
@@ -248,7 +249,8 @@ sensor:
       buf.append(x.begin(), x.end());
       LithionicsSensors s = {id(batt2_voltage), id(batt2_cell1), id(batt2_cell2),
         id(batt2_cell3), id(batt2_cell4), id(batt2_bms_temp),
-        id(batt2_batt_temp), id(batt2_current), id(batt2_soc), id(batt2_capacity)};
+        id(batt2_batt_temp), id(batt2_current), id(batt2_soc), id(batt2_capacity),
+        id(batt2_power), id(batt2_status_code)};
       lithionics_parse(buf, s);
       return 0;
 
@@ -266,7 +268,8 @@ sensor:
       buf.append(x.begin(), x.end());
       LithionicsSensors s = {id(batt3_voltage), id(batt3_cell1), id(batt3_cell2),
         id(batt3_cell3), id(batt3_cell4), id(batt3_bms_temp),
-        id(batt3_batt_temp), id(batt3_current), id(batt3_soc), id(batt3_capacity)};
+        id(batt3_batt_temp), id(batt3_current), id(batt3_soc), id(batt3_capacity),
+        id(batt3_power), id(batt3_status_code)};
       lithionics_parse(buf, s);
       return 0;
 
@@ -360,6 +363,15 @@ sensor:
     icon: "mdi:battery-heart-variant"
     filters:
       - throttle: 30s
+  - platform: template
+    name: "Battery 1 Power"
+    id: batt1_power
+    unit_of_measurement: "W"
+    accuracy_decimals: 1
+    device_class: power
+    icon: "mdi:flash"
+    filters:
+      - throttle: 10s
 
   # Battery 2 (Li3-010622146)
   - platform: template
@@ -451,6 +463,15 @@ sensor:
     icon: "mdi:battery-heart-variant"
     filters:
       - throttle: 30s
+  - platform: template
+    name: "Battery 2 Power"
+    id: batt2_power
+    unit_of_measurement: "W"
+    accuracy_decimals: 1
+    device_class: power
+    icon: "mdi:flash"
+    filters:
+      - throttle: 10s
 
   # Battery 3 (Li3-032124086)
   - platform: template
@@ -542,6 +563,15 @@ sensor:
     icon: "mdi:battery-heart-variant"
     filters:
       - throttle: 30s
+  - platform: template
+    name: "Battery 3 Power"
+    id: batt3_power
+    unit_of_measurement: "W"
+    accuracy_decimals: 1
+    device_class: power
+    icon: "mdi:flash"
+    filters:
+      - throttle: 10s
 
 text_sensor:
   - platform: wifi_info
@@ -555,6 +585,19 @@ text_sensor:
       name: "WiFi Network"
       id: wifi_network
       icon: "mdi:wifi-cog"
+
+  - platform: template
+    name: "Battery 1 Status Code"
+    id: batt1_status_code
+    icon: "mdi:alert-circle-outline"
+  - platform: template
+    name: "Battery 2 Status Code"
+    id: batt2_status_code
+    icon: "mdi:alert-circle-outline"
+  - platform: template
+    name: "Battery 3 Status Code"
+    id: batt3_status_code
+    icon: "mdi:alert-circle-outline"
 
 # Scripts
 script:
