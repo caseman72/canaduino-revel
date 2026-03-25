@@ -10,6 +10,8 @@ secrets.h
 # Claude Code
 **/.claude/
 
+screenshots/
+
 # BLE discovery artifacts
 ble_discovery/*.log
 ble_discovery/*.json

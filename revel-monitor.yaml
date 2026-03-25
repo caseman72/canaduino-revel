@@ -156,6 +156,19 @@ switch:
     icon: "mdi:fan"
     restore_mode: RESTORE_DEFAULT_OFF
 
+  - platform: ble_client
+    ble_client_id: battery_1
+    name: "Battery 1 BLE"
+    icon: "mdi:bluetooth-connect"
+  - platform: ble_client
+    ble_client_id: battery_2
+    name: "Battery 2 BLE"
+    icon: "mdi:bluetooth-connect"
+  - platform: ble_client
+    ble_client_id: battery_3
+    name: "Battery 3 BLE"
+    icon: "mdi:bluetooth-connect"
+
 # MQTT buttons for Home Assistant
 button:
   - platform: template
