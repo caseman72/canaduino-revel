@@ -75,10 +75,13 @@ custom_fields:
     [[[
       const battTemp = states['sensor.revel_monitor_battery_2_temperature'] ? parseFloat(states['sensor.revel_monitor_battery_2_temperature'].state) : 0;
       const bmsTemp = states['sensor.revel_monitor_battery_2_bms_temp'] ? parseFloat(states['sensor.revel_monitor_battery_2_bms_temp'].state) : 0;
+      const bleSwitch = states['switch.revel_monitor_battery_2_ble'] ? states['switch.revel_monitor_battery_2_ble'].state : 'off';
       const statusCode = states['sensor.revel_monitor_battery_2_status_code'] ? states['sensor.revel_monitor_battery_2_status_code'].state : 'unknown';
-      const state = statusCode === '000000' ? 'ON' : statusCode === 'unknown' || statusCode === 'unavailable' ? 'OFF' : 'FAULT';
+      const bleOn = bleSwitch === 'on';
+      const fault = bleOn && statusCode !== '000000' && statusCode !== 'unknown' && statusCode !== 'unavailable';
+      const state = fault ? 'FAULT' : bleOn ? 'ON' : 'OFF';
       const stateColor = state === 'ON' ? '#4CAF50' : state === 'FAULT' ? '#F44336' : '#999';
-      const dotColor = state === 'ON' ? '#4CAF50' : state === 'FAULT' ? '#F44336' : '#666';
+      const dotColor = state === 'ON' ? '#4CAF50' : state === 'FAULT' ? '#F44336' : '#F44336';
 
       function tempColor(t) {
         if (t <= 0) return '#2196F3';
