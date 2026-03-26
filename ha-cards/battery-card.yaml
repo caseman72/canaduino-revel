@@ -114,6 +114,7 @@ custom_fields:
       const capacity = states['sensor.revel_monitor_battery_1_capacity'] ? parseFloat(states['sensor.revel_monitor_battery_1_capacity'].state) : 0;
       const statusCode = states['sensor.revel_monitor_battery_1_status_code'] ? states['sensor.revel_monitor_battery_1_status_code'].state : '000000';
 
+      const soc = states['sensor.revel_monitor_battery_1_soc'] ? parseFloat(states['sensor.revel_monitor_battery_1_soc'].state) : 0;
       let timeStr = 'Idle';
       let timeColor = '#999';
       if (currentVal < 0 && capacity > 0) {
@@ -123,6 +124,13 @@ custom_fields:
         const m = Math.floor((secs % 3600) / 60);
         timeStr = d > 0 ? `${d}d ${h}h` : `${h}h ${m}m`;
         timeColor = '#F44336';
+      } else if (currentVal === 0 && soc > 20) {
+        const usablePct = soc - 20;
+        const secs = Math.round(usablePct * 4 * 3600);
+        const d = Math.floor(secs / 86400);
+        const h = Math.floor((secs % 86400) / 3600);
+        timeStr = d > 0 ? `~${d}d ${h}h` : `~${h}h`;
+        timeColor = '#FF9800';
       } else if (currentVal > 0) {
         const fullAh = 120;
         const remaining = Math.max(0, fullAh - capacity);
