@@ -18,6 +18,8 @@ struct LithionicsSensors {
   esphome::sensor::Sensor *capacity;
   esphome::sensor::Sensor *power;
   esphome::text_sensor::TextSensor *status_code;
+  std::string *last_status_code;
+  uint32_t *last_status_publish_ms;
 };
 
 // Parse buffered BLE data from Lithionics battery into sensor values.
@@ -76,7 +78,17 @@ inline void lithionics_parse(std::string &buf, const LithionicsSensors &s) {
         if (s.current) s.current->publish_state(f[7]);
         if (s.soc) s.soc->publish_state(f[8]);
         if (s.power) s.power->publish_state(f[0] / 100.0f * f[7]);
-        if (n >= 10 && s.status_code) s.status_code->publish_state(line.substr(line.rfind(',') + 1));
+        if (n >= 10 && s.status_code && s.last_status_code && s.last_status_publish_ms) {
+          std::string code = line.substr(line.rfind(',') + 1);
+          uint32_t now = millis();
+          bool changed = code != *s.last_status_code;
+          bool expired = (now - *s.last_status_publish_ms) >= 60000;
+          if (changed || expired) {
+            s.status_code->publish_state(code);
+            *s.last_status_code = code;
+            *s.last_status_publish_ms = now;
+          }
+        }
       }
     }
   }
