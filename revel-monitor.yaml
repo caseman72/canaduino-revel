@@ -17,30 +17,6 @@ esphome:
   friendly_name: Revel Monitor
   includes:
     - lithionics_ble.h
-  on_boot:
-    priority: 599  # Right after globals restored (600), well before WiFi connects (250)
-    then:
-      - lambda: |-
-          id(network_fail_count)++;
-          ESP_LOGW("boot", "use_secondary_network = %s, network_fail_count = %d",
-                   id(use_secondary_network) ? "TRUE" : "FALSE", id(network_fail_count));
-          if (id(network_fail_count) >= 2) {
-            id(use_secondary_network) = !id(use_secondary_network);
-            id(network_fail_count) = 0;
-            ESP_LOGW("boot", "Network failed twice - swapping to %s",
-                     id(use_secondary_network) ? "${wifi_secondary_ssid}" : "${wifi_primary_ssid}");
-          }
-          wifi::WiFiAP ap;
-          if (id(use_secondary_network)) {
-            ap.set_ssid("${wifi_secondary_ssid}");
-            ap.set_password("${wifi_secondary_password}");
-            ESP_LOGW("boot", "Using ${wifi_secondary_ssid}");
-          } else {
-            ap.set_ssid("${wifi_primary_ssid}");
-            ap.set_password("${wifi_primary_password}");
-            ESP_LOGW("boot", "Using ${wifi_primary_ssid}");
-          }
-          wifi::global_wifi_component->set_sta(ap);
 
 esp32:
   board: arduino_nano_esp32
@@ -51,9 +27,14 @@ esp32:
       CONFIG_BT_NIMBLE_MAX_CONNECTIONS: "4"
 
 wifi:
-  ssid: ${wifi_primary_ssid}
-  password: ${wifi_primary_password}
+  networks:
+    - ssid: ${wifi_primary_ssid}
+      password: ${wifi_primary_password}
+    - ssid: ${wifi_secondary_ssid}
+      password: ${wifi_secondary_password}
   fast_connect: true
+  power_save_mode: NONE
+  post_connect_roaming: false
   reboot_timeout: 15min
 
 mqtt:
@@ -70,11 +51,6 @@ mqtt:
   reboot_timeout: 15min
   on_connect:
     - logger.log: "MQTT Connected!"
-    - lambda: |-
-        if (id(network_fail_count) > 0) {
-          ESP_LOGI("mqtt", "Resetting network_fail_count (was %d)", id(network_fail_count));
-          id(network_fail_count) = 0;
-        }
   on_disconnect:
     - logger.log: "MQTT Disconnected!"
 
@@ -104,14 +80,6 @@ ble_client:
 
 # State tracking
 globals:
-  - id: use_secondary_network
-    type: bool
-    restore_value: yes
-    initial_value: 'false'
-  - id: network_fail_count
-    type: int
-    restore_value: yes
-    initial_value: '0'
   - id: batt1_buf
     type: std::string
     restore_value: no
@@ -182,13 +150,6 @@ switch:
 
 # MQTT buttons for Home Assistant
 button:
-  - platform: template
-    name: "P3 Button - Switch Network"
-    id: btn_switch_network
-    icon: "mdi:wifi-sync"
-    on_press:
-      - script.execute: switch_network
-
   - platform: template
     name: "P5 Button - Restart"
     id: btn_restart
@@ -623,17 +584,3 @@ text_sensor:
     id: batt3_status_code
     icon: "mdi:alert-circle-outline"
 
-# Scripts
-script:
-  - id: switch_network
-    then:
-      - lambda: |-
-          id(use_secondary_network) = !id(use_secondary_network);
-          id(network_fail_count) = 0;
-          if (id(use_secondary_network)) {
-            ESP_LOGI("wifi", "Switching to ${wifi_secondary_ssid} - will restart");
-          } else {
-            ESP_LOGI("wifi", "Switching to ${wifi_primary_ssid} - will restart");
-          }
-      - delay: 500ms
-      - lambda: 'App.safe_reboot();'
