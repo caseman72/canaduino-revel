@@ -23,3 +23,5 @@ ble_discovery/.venv/
 
 # macOS
 .DS_Store
+
+*.bak.*
