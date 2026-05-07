@@ -18,19 +18,29 @@ esphome:
   includes:
     - lithionics_ble.h
   on_boot:
-    priority: 599
+    priority: 599  # Right after globals restored (600), well before WiFi connects (250)
     then:
       - lambda: |-
-          ESP_LOGW("boot", "use_secondary_network = %s", id(use_secondary_network) ? "TRUE" : "FALSE");
+          id(network_fail_count)++;
+          ESP_LOGW("boot", "use_secondary_network = %s, network_fail_count = %d",
+                   id(use_secondary_network) ? "TRUE" : "FALSE", id(network_fail_count));
+          if (id(network_fail_count) >= 2) {
+            id(use_secondary_network) = !id(use_secondary_network);
+            id(network_fail_count) = 0;
+            ESP_LOGW("boot", "Network failed twice - swapping to %s",
+                     id(use_secondary_network) ? "${wifi_secondary_ssid}" : "${wifi_primary_ssid}");
+          }
+          wifi::WiFiAP ap;
           if (id(use_secondary_network)) {
-            ESP_LOGW("boot", "SWITCHING to secondary: ${wifi_secondary_ssid}");
-            wifi::WiFiAP ap;
             ap.set_ssid("${wifi_secondary_ssid}");
             ap.set_password("${wifi_secondary_password}");
-            wifi::global_wifi_component->set_sta(ap);
+            ESP_LOGW("boot", "Using ${wifi_secondary_ssid}");
           } else {
-            ESP_LOGW("boot", "Using primary: ${wifi_primary_ssid}");
+            ap.set_ssid("${wifi_primary_ssid}");
+            ap.set_password("${wifi_primary_password}");
+            ESP_LOGW("boot", "Using ${wifi_primary_ssid}");
           }
+          wifi::global_wifi_component->set_sta(ap);
 
 esp32:
   board: arduino_nano_esp32
@@ -60,6 +70,11 @@ mqtt:
   reboot_timeout: 15min
   on_connect:
     - logger.log: "MQTT Connected!"
+    - lambda: |-
+        if (id(network_fail_count) > 0) {
+          ESP_LOGI("mqtt", "Resetting network_fail_count (was %d)", id(network_fail_count));
+          id(network_fail_count) = 0;
+        }
   on_disconnect:
     - logger.log: "MQTT Disconnected!"
 
@@ -93,6 +108,10 @@ globals:
     type: bool
     restore_value: yes
     initial_value: 'false'
+  - id: network_fail_count
+    type: int
+    restore_value: yes
+    initial_value: '0'
   - id: batt1_buf
     type: std::string
     restore_value: no
@@ -610,6 +629,7 @@ script:
     then:
       - lambda: |-
           id(use_secondary_network) = !id(use_secondary_network);
+          id(network_fail_count) = 0;
           if (id(use_secondary_network)) {
             ESP_LOGI("wifi", "Switching to ${wifi_secondary_ssid} - will restart");
           } else {
