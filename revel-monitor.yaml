@@ -175,7 +175,7 @@ sensor:
     name: "Revel Voltage"
     id: revel_voltage
     attenuation: auto
-    update_interval: 30s
+    update_interval: 60s
     unit_of_measurement: "V"
     accuracy_decimals: 1
     icon: "mdi:flash"
@@ -267,7 +267,7 @@ sensor:
     device_class: voltage
     icon: "mdi:battery"
     filters:
-      - throttle: 30s
+      - throttle: 60s
   - platform: template
     name: "Battery 1 Cell 1"
     id: batt1_cell1
@@ -330,7 +330,7 @@ sensor:
     device_class: current
     icon: "mdi:current-dc"
     filters:
-      - throttle: 30s
+      - throttle: 60s
   - platform: template
     name: "Battery 1 SOC"
     id: batt1_soc
@@ -339,7 +339,7 @@ sensor:
     device_class: battery
     icon: "mdi:battery-charging"
     filters:
-      - throttle: 30s
+      - throttle: 60s
   - platform: template
     name: "Battery 1 Capacity"
     id: batt1_capacity
@@ -356,7 +356,7 @@ sensor:
     device_class: power
     icon: "mdi:flash"
     filters:
-      - throttle: 30s
+      - throttle: 60s
 
   # Battery 2 (Li3-010622146)
   - platform: template
@@ -367,7 +367,7 @@ sensor:
     device_class: voltage
     icon: "mdi:battery"
     filters:
-      - throttle: 30s
+      - throttle: 60s
   - platform: template
     name: "Battery 2 Cell 1"
     id: batt2_cell1
@@ -430,7 +430,7 @@ sensor:
     device_class: current
     icon: "mdi:current-dc"
     filters:
-      - throttle: 30s
+      - throttle: 60s
   - platform: template
     name: "Battery 2 SOC"
     id: batt2_soc
@@ -439,7 +439,7 @@ sensor:
     device_class: battery
     icon: "mdi:battery-charging"
     filters:
-      - throttle: 30s
+      - throttle: 60s
   - platform: template
     name: "Battery 2 Capacity"
     id: batt2_capacity
@@ -456,7 +456,7 @@ sensor:
     device_class: power
     icon: "mdi:flash"
     filters:
-      - throttle: 30s
+      - throttle: 60s
 
   # Battery 3 (Li3-032124086)
   - platform: template
@@ -467,7 +467,7 @@ sensor:
     device_class: voltage
     icon: "mdi:battery"
     filters:
-      - throttle: 30s
+      - throttle: 60s
   - platform: template
     name: "Battery 3 Cell 1"
     id: batt3_cell1
@@ -530,7 +530,7 @@ sensor:
     device_class: current
     icon: "mdi:current-dc"
     filters:
-      - throttle: 30s
+      - throttle: 60s
   - platform: template
     name: "Battery 3 SOC"
     id: batt3_soc
@@ -539,7 +539,7 @@ sensor:
     device_class: battery
     icon: "mdi:battery-charging"
     filters:
-      - throttle: 30s
+      - throttle: 60s
   - platform: template
     name: "Battery 3 Capacity"
     id: batt3_capacity
@@ -556,7 +556,7 @@ sensor:
     device_class: power
     icon: "mdi:flash"
     filters:
-      - throttle: 30s
+      - throttle: 60s
 
 text_sensor:
   - platform: wifi_info
