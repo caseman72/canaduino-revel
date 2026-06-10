@@ -15,14 +15,56 @@ ESPHome-based monitor for Revel van using a Canaduino PLC and Arduino Nano ESP32
 - Lithionics battery monitoring via BLE (voltage, cell voltages, SOC, current, temperature, capacity)
 - Relay-controlled fan output
 - WiFi diagnostics (RSSI, IP, connected SSID)
-- Dual WiFi network support with runtime switching (P3 button)
+- Dual WiFi network support with automatic failover (ESPHome `networks:` block)
 - Remote restart capability (P5 button)
 
 ## MQTT
 
-Connects to HiveMQ Cloud via TLS (port 8883). Topic prefix: `revel`
+Connects to a local Mosquitto broker at `hive.manion.org` (port 1883). Topic prefix: `revel`
 
 Home Assistant auto-discovery enabled with MAC-based unique IDs.
+
+> **Note:** `hive.manion.org` is a public A-record pointing at a **Tailscale-only IP**
+> (`100.77.186.118`). The ESP32 can't run Tailscale, so it reaches the broker through the
+> van's GL.iNet router (`AC-917`), which bridges LAN → tailnet. See
+> [Router: reaching the Tailscale broker](#router-reaching-the-tailscale-broker) if the
+> device shows "unavailable" in Home Assistant.
+
+## Router: reaching the Tailscale broker
+
+Because the broker lives on Tailscale and the ESP32 doesn't, the GL.iNet router
+(GL-AXT1800, `172.16.8.1`) has to forward and **masquerade** the van LAN into the tailnet.
+Two pieces are required:
+
+1. **Forwarding** — in the GL.iNet web UI: *Tailscale → "Allow Remote Access LAN" = ON*.
+   This creates the `lan → tailscale0` forwarding rule (set once, persists).
+2. **Masquerade** — *not* set by that toggle. Without it, the broker's replies have no route
+   back to the van LAN and the ESP32 shows "unavailable". Apply it on the router:
+
+   ```sh
+   uci set firewall.tailscale0.masq='1'
+   uci commit firewall
+   /etc/init.d/firewall reload
+   ```
+
+This lives in `/etc/config/firewall` and **survives reboots**. The only thing that wipes it
+is changing the Tailscale toggles in the GL.iNet web UI (that regenerates the zone) — just
+re-apply if you do.
+
+A documented, idempotent runbook script is in [`router/fix-mqtt-tailscale.sh`](router/fix-mqtt-tailscale.sh)
+(run it *on the router*):
+
+```sh
+./fix-mqtt-tailscale.sh diagnose   # read-only health check
+./fix-mqtt-tailscale.sh apply      # apply the masquerade fix + verify
+```
+
+Verify the path from any LAN host (laptop on `AC-917`):
+
+```sh
+nc -z hive.manion.org 1883
+mosquitto_sub -h hive.manion.org -u canaduino -t 'revel/#' -v
+```
 
 ## Setup
 
