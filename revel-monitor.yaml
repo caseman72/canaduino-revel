@@ -36,6 +36,11 @@ wifi:
   power_save_mode: NONE
   post_connect_roaming: false
   reboot_timeout: 15min
+  # Bounce MQTT on (re)connect so a network switch resets the retry backoff
+  # and re-resolves the broker immediately (stale DNS clears once TTL expires)
+  on_connect:
+    - mqtt.disable
+    - mqtt.enable
 
 mqtt:
   broker: ${mqtt_broker}
@@ -126,13 +131,20 @@ one_wire:
     pin: 11  # Canaduino SDA/A4 = GPIO 11
 
 # Relay outputs
-# Arduino Nano ESP32: D2=GPIO5
+# Arduino Nano ESP32: D2=GPIO5, D4=GPIO7
 switch:
   - platform: gpio
     pin: 5
     name: "Revel Fan"
     id: revel_fan
     icon: "mdi:fan"
+    restore_mode: RESTORE_DEFAULT_OFF
+
+  - platform: gpio
+    pin: 7
+    name: "Starlink Power"
+    id: starlink_power
+    icon: "mdi:satellite-uplink"
     restore_mode: RESTORE_DEFAULT_OFF
 
   - platform: ble_client
@@ -147,6 +159,28 @@ switch:
     ble_client_id: battery_3
     name: "Battery 3 BLE"
     icon: "mdi:bluetooth-connect"
+
+# Physical inputs
+# Arduino Nano ESP32: D12=GPIO47 (DI3)
+# PLC opto fed 12V from RF box REM output (inputs rated to 24V) - INPUT_PULLDOWN, active HIGH
+# DI3 = RF remote relay (QIACHIP 433MHz, latching mode): rising edge turns
+# Starlink relay ON, falling edge turns it OFF. HA can still override while
+# DI3 is held ON; a new rising edge is required to turn it back on via RF.
+binary_sensor:
+  - platform: gpio
+    pin:
+      number: 47
+      mode: INPUT_PULLDOWN
+    name: "DI3 RF Remote"
+    id: di3_rf_remote
+    icon: "mdi:remote"
+    filters:
+      - delayed_on: 100ms
+      - delayed_off: 100ms
+    on_press:
+      - switch.turn_on: starlink_power
+    on_release:
+      - switch.turn_off: starlink_power
 
 # MQTT buttons for Home Assistant
 button:
