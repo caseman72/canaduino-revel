@@ -53,11 +53,15 @@ mqtt:
   topic_prefix: revel
   idf_send_async: true
   log_topic: revel/logs
-  reboot_timeout: 15min
+  # No reboot on MQTT loss: a reboot blips REL3 and power-cycles Starlink, and
+  # hive being unreachable while on AC-917 is expected (use P5 restart if wedged)
+  reboot_timeout: 0s
   on_connect:
     - logger.log: "MQTT Connected!"
+    - switch.turn_off: mqtt_status_light
   on_disconnect:
     - logger.log: "MQTT Disconnected!"
+    - switch.turn_on: mqtt_status_light
 
 ota:
   platform: esphome
@@ -121,6 +125,39 @@ globals:
     type: uint32_t
     restore_value: no
     initial_value: '0'
+  # Starlink auto-on tracking
+  - id: wifi_down_mins
+    type: int
+    restore_value: no
+    initial_value: '0'
+  # Last network we successfully connected to: 0 = none since flash,
+  # 1 = farmland (home), 2 = other (AC-917/Starlink). Persisted to flash so
+  # the 15-min no-WiFi reboot doesn't forget a deliberate Starlink-off while away.
+  - id: last_wifi_net
+    type: int
+    restore_value: yes
+    initial_value: '0'
+
+# Starlink auto-on: if we lose all WiFi for 5 minutes and the last network we
+# had was farmland (i.e. we drove away from home) or none at all, turn REL3 on
+# so Starlink/AC-917 comes up. Deliberately NOT triggered when the last network
+# was AC-917 — that means Starlink was intentionally shut off while away, and
+# auto-on would just undo it in a loop. Fires once per outage (== 5 check).
+interval:
+  - interval: 60s
+    then:
+      - lambda: |-
+          auto *w = wifi::global_wifi_component;
+          if (w->is_connected()) {
+            id(wifi_down_mins) = 0;
+            id(last_wifi_net) = (w->wifi_ssid() == "${wifi_secondary_ssid}") ? 1 : 2;
+            return;
+          }
+          id(wifi_down_mins) += 1;
+          if (id(wifi_down_mins) == 5 && !id(starlink_power).state && id(last_wifi_net) != 2) {
+            ESP_LOGI("starlink", "No WiFi for 5 min, last network was home/none - auto-enabling Starlink");
+            id(starlink_power).turn_on();
+          }
 
 # 1-Wire bus for DS18B20 temperature sensor
 # Wiring: SDA/A4 terminal (data), 5V (VCC), GND
@@ -131,8 +168,17 @@ one_wire:
     pin: 11  # Canaduino SDA/A4 = GPIO 11
 
 # Relay outputs
-# Arduino Nano ESP32: D2=GPIO5, D4=GPIO7
+# Arduino Nano ESP32: D2=GPIO5 (REL1), D4=GPIO7 (REL3), A3=GPIO4 (REL6)
 switch:
+  # REL6 = indicator light: ON whenever MQTT is disconnected (starts ON at
+  # boot, turned off by mqtt on_connect). If the light is on, MQTT is bad.
+  - platform: gpio
+    pin: 4
+    name: "MQTT Status Light"
+    id: mqtt_status_light
+    icon: "mdi:alarm-light"
+    restore_mode: ALWAYS_ON
+
   - platform: gpio
     pin: 5
     name: "Revel Fan"

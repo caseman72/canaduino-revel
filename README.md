@@ -15,6 +15,10 @@ ESPHome-based monitor for Revel van using a Canaduino PLC and Arduino Nano ESP32
 - Lithionics battery monitoring via BLE (voltage, cell voltages, SOC, current, temperature, capacity)
 - Relay-controlled fan output
 - Starlink power via REL3, with RF remote override on DI3 (QIACHIP 433MHz relay)
+- Starlink auto-on: 5 min without WiFi turns REL3 on, unless the last network was
+  AC-917 (a deliberate Starlink-off while away sticks; flag persisted across reboots)
+- MQTT trouble light on REL6 — ON whenever the broker is unreachable (no MQTT
+  reboot_timeout: reboots would power-cycle Starlink)
 - WiFi diagnostics (RSSI, IP, connected SSID)
 - Dual WiFi network support with automatic failover (ESPHome `networks:` block)
 - Remote restart capability (P5 button)
@@ -98,6 +102,7 @@ See `secrets.example.h` for the template.
 | Van 12V (yellow) | REL3 COM (D4 / GPIO 7) | HA switch "Starlink Power", state restored on reboot |
 | Starlink module REM | REL3 NO | Contact closes when REL3 is ON → Starlink enabled |
 | RF box REM output (12V) | DI3 (D12 / GPIO 47) | Van 12V switched by QIACHIP (latching mode); PLC opto inputs rated to 24V. Rising edge → REL3 ON, falling edge → REL3 OFF |
+| Indicator light | REL6 (A3 / GPIO 4) | ON whenever MQTT is disconnected (light on = MQTT bad) |
 
 Previously the RF box output fed the Starlink module's REM directly; now the RF box
 only feeds DI3, and REL3 is the sole switch on the Starlink REM line.
